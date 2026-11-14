@@ -1,0 +1,22 @@
+{
+  "name": "wp_parchi",
+  "version": "1.0.0",
+  "description": "WhatsApp job assignment for small businesses",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/qrcode-terminal": "^0.12.2",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "baileys": "6.7.24",
+    "pino": "^9.6.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#29497A">
+<title>Parchi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground:    #EFF2F6;
+    --surface:   #FFFFFF;
+    --surface-2: #E6EBF1;
+    --ink:       #111923;
+    --ink-2:     #3C4857;
+    --muted:     #68758A;
+    --rule:      #D2DAE4;
+    --rule-2:    #BAC5D3;
+    --accent:    #29497A;
+    --accent-bg: #E3EAF4;
+    --stamp:     #A1361F;
+    --stamp-bg:  #FAE6E0;
+    --good:      #28624A;
+    --good-bg:   #DFEFE6;
+    --warn:      #8A5A12;
+    --warn-bg:   #FAEFD9;
+
+    --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #0E1218;
+      --surface:   #171E27;
+      --surface-2: #212A36;
+      --ink:       #EAEFF5;
+      --ink-2:     #C2CCD9;
+      --muted:     #93A1B2;
+      --rule:      #2C3542;
+      --rule-2:    #3D4858;
+      --accent:    #8FB1E0;
+      --accent-bg: #1B2838;
+      --stamp:     #EF9077;
+      --stamp-bg:  #33211A;
+      --good:      #7CCCA0;
+      --good-bg:   #16281F;
+      --warn:      #E0AC5B;
+      --warn-bg:   #2C2518;
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 0 1rem 4rem; }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── header ─────────────────────────────────────────── */
+
+  header { padding: 1.4rem 0 0.25rem; }
+
+  .brandrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.3rem;
+  }
+
+  h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+
+  input[type="date"] {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--rule-2);
+    border-radius: 4px;
+    padding: 0.42rem 0.55rem;
+    min-height: 2.25rem;
+  }
+  input[type="date"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .showing {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 0.9rem;
+  }
+  .showing b { color: var(--ink-2); font-weight: 600; }
+
+  .ranges { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    min-height: 2rem;
+  }
+  .chip[aria-pressed="true"] {
+    color: #fff; background: var(--accent); border-color: var(--accent);
+  }
+  :root:not([data-theme="light"]) .chip[aria-pressed="true"] { color: var(--ground); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── stat tiles ─────────────────────────────────────── */
+
+  section { margin-bottom: 1.6rem; }
+  section > .label { display: block; margin-bottom: 0.55rem; }
+
+  .tiles { display: grid; gap: 0.6rem; grid-template-columns: repeat(3, 1fr); }
+  .tiles.two { grid-template-columns: repeat(2, 1fr); }
+
+  .tile {
+    text-align: left;
+    font-family: inherit;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 0.8rem 0.85rem;
+    cursor: pointer;
+    min-height: 4.4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .tile .n {
+    font-family: var(--mono);
+    font-size: 1.85rem;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .tile .k {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.45rem;
+  }
+  .tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .tile.alert { background: var(--stamp-bg); border-color: var(--stamp); }
+  .tile.alert .n, .tile.alert .k { color: var(--stamp); }
+  .tile.alert[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--stamp); }
+
+  /* ── people table ───────────────────────────────────── */
+
+  .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: right;
+    padding: 0.6rem 0.7rem 0.5rem;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  th:first-child, td:first-child { text-align: left; }
+  td {
+    padding: 0.7rem;
+    border-bottom: 1px solid var(--rule);
+    text-align: right;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-family: var(--sans); font-weight: 500; white-space: nowrap; }
+  td.zero { color: var(--muted); opacity: 0.5; }
+  td.bad { color: var(--stamp); font-weight: 600; }
+
+  /* ── job cards ──────────────────────────────────────── */
+
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.65rem; }
+
+  li {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--rule-2);
+    border-radius: 5px;
+    padding: 0.95rem 1rem;
+  }
+  li.s-accepted, li.s-in_progress { border-left-color: var(--accent); }
+  li.s-blocked { border-left-color: var(--stamp); }
+  li.s-done, li.s-closed { border-left-color: var(--good); }
+  li.waiting { border-left-color: var(--stamp); }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .id { font-family: var(--mono); font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+
+  .title {
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.38;
+    letter-spacing: -0.005em;
+    margin: 0 0 0.55rem;
+    overflow-wrap: anywhere;
+  }
+
+  .meta {
+    font-size: 0.86rem;
+    color: var(--ink-2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.45rem;
+    align-items: baseline;
+  }
+  .meta .who { font-weight: 600; }
+  .meta .sep { color: var(--rule-2); }
+  .meta .age { font-family: var(--mono); color: var(--muted); }
+
+  .pill {
+    font-family: var(--mono);
+    font-size: 0.63rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3em 0.6em;
+    border-radius: 3px;
+    white-space: nowrap;
+    background: var(--surface-2);
+    color: var(--ink-2);
+  }
+  .pill.accepted, .pill.in_progress { background: var(--accent-bg); color: var(--accent); }
+  .pill.blocked { background: var(--stamp-bg); color: var(--stamp); }
+  .pill.done, .pill.closed { background: var(--good-bg); color: var(--good); }
+  .pill.urgent { background: var(--stamp-bg); color: var(--stamp); margin-right: 0.3rem; }
+
+  .flag {
+    margin-top: 0.65rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    padding: 0.5rem 0.65rem;
+    border-radius: 3px;
+    background: var(--stamp-bg);
+    color: var(--stamp);
+  }
+  .flag.wait { background: var(--warn-bg); color: var(--warn); }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 3rem 1rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    background: var(--surface);
+    border: 1px dashed var(--rule-2);
+    border-radius: 5px;
+  }
+  .empty code {
+    font-family: var(--mono);
+    background: var(--surface-2);
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  .tick { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+  .tick.stale { color: var(--stamp); font-weight: 600; }
+
+  footer { margin-top: 1.5rem; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brandrow">
+      <h1>Parchi</h1>
+      <input type="date" id="date" aria-label="Pick a date">
+    </div>
+    <p class="showing" id="showing"></p>
+    <div class="ranges" id="ranges">
+      <button class="chip" data-r="today">Today</button>
+      <button class="chip" data-r="7d">7 days</button>
+      <button class="chip" data-r="30d">30 days</button>
+      <button class="chip" data-r="all">All time</button>
+    </div>
+  </header>
+
+  <section>
+    <span class="label">Right now</span>
+    <div class="tiles" id="liveTiles"></div>
+  </section>
+
+  <section>
+    <span class="label" id="periodLabel">In this period</span>
+    <div class="tiles two" id="periodTiles"></div>
+  </section>
+
+  <section id="peopleSection">
+    <span class="label">By person</span>
+    <div class="tblwrap">
+      <table>
+        <thead>
+          <tr><th>Staff</th><th>Open</th><th>Waiting</th><th>Done</th></tr>
+        </thead>
+        <tbody id="people"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <span class="label" id="listLabel">Jobs</span>
+    <ul id="list"></ul>
+    <div class="empty" id="empty" hidden></div>
+  </section>
+
+  <footer><span class="tick" id="tick">loading…</span></footer>
+
+</div>
+
+<script>
+// ─── state ────────────────────────────────────────────────
+let data = null;
+let range = "today";            // today | 7d | 30d | all | a YYYY-MM-DD string
+let filter = "open";            // which tile is selected
+
+const DAY = 86400000;
+
+// ─── helpers ──────────────────────────────────────────────
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function ago(ms) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 60) return "just now";
+  const m = Math.round(s / 60);
+  if (m < 60) return m + "m";
+  const h = Math.round(m / 60);
+  if (h < 24) return h + "h";
+  return Math.round(h / 24) + "d";
+}
+
+function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x.getTime(); }
+
+/** The selected range as [from, to) in epoch ms, plus a human label. */
+function bounds() {
+  const now = data ? data.now : Date.now();
+  const today = startOfDay(now);
+
+  if (range === "today") return { from: today, to: today + DAY, text: "Today" };
+  if (range === "7d")    return { from: today - 6*DAY, to: today + DAY, text: "Last 7 days" };
+  if (range === "30d")   return { from: today - 29*DAY, to: today + DAY, text: "Last 30 days" };
+  if (range === "all")   return { from: 0, to: Infinity, text: "All time" };
+
+  // a specific date
+  const d = startOfDay(new Date(range + "T00:00:00"));
+  const text = new Date(d).toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "long",
+  });
+  return { from: d, to: d + DAY, text };
+}
+
+const isOpen    = j => !["done","closed"].includes(j.status);
+const isWaiting = j => j.status === "assigned" && j.assigned_at != null
+                    && (data.now - j.assigned_at) > data.waitingAfterMs;
+const inRange   = (t, b) => t != null && t >= b.from && t < b.to;
+
+// ─── filters, driven by the tiles ─────────────────────────
+const FILTERS = {
+  open:    { label: "Open jobs",        pick: (j)    => isOpen(j) },
+  waiting: { label: "Waiting on staff", pick: (j)    => isWaiting(j) },
+  stuck:   { label: "Stuck",            pick: (j)    => j.status === "blocked" },
+  created: { label: "Created",          pick: (j, b) => inRange(j.created_at, b) },
+  done:    { label: "Completed",        pick: (j, b) => inRange(j.done_at, b) },
+};
+
+// ─── render ───────────────────────────────────────────────
+function render() {
+  if (!data) return;
+  const b = bounds();
+  const jobs = data.jobs;
+
+  // the period label and "showing" line
+  document.getElementById("showing").innerHTML = "Showing <b>" + esc(b.text) + "</b>";
+  document.getElementById("periodLabel").textContent = "In this period";
+
+  document.querySelectorAll("#ranges .chip").forEach(c =>
+    c.setAttribute("aria-pressed", String(c.dataset.r === range)));
+
+  const counts = {
+    open:    jobs.filter(j => isOpen(j)).length,
+    waiting: jobs.filter(j => isWaiting(j)).length,
+    stuck:   jobs.filter(j => j.status === "blocked").length,
+    created: jobs.filter(j => inRange(j.created_at, b)).length,
+    done:    jobs.filter(j => inRange(j.done_at, b)).length,
+  };
+
+  const tile = (k, caption, alert) =>
+    '<button class="tile' + (alert && counts[k] > 0 ? " alert" : "") + '"'
+    + ' aria-pressed="' + (filter === k) + '" data-f="' + k + '">'
+    + '<span class="n">' + counts[k] + '</span>'
+    + '<span class="k">' + caption + '</span></button>';
+
+  document.getElementById("liveTiles").innerHTML =
+    tile("open", "open now") + tile("waiting", "waiting", true) + tile("stuck", "stuck", true);
+
+  document.getElementById("periodTiles").innerHTML =
+    tile("created", "created") + tile("done", "completed");
+
+  renderPeople(b, jobs);
+  renderList(b, jobs);
+}
+
+function renderPeople(b, jobs) {
+  const names = [...new Set(jobs.map(j => j.assignee_name).filter(Boolean))].sort();
+  const section = document.getElementById("peopleSection");
+
+  if (!names.length) { section.hidden = true; return; }
+  section.hidden = false;
+
+  document.getElementById("people").innerHTML = names.map(name => {
+    const mine = jobs.filter(j => j.assignee_name === name);
+    const open = mine.filter(j => isOpen(j)).length;
+    const wait = mine.filter(j => isWaiting(j)).length;
+    const done = mine.filter(j => inRange(j.done_at, b)).length;
+    const cell = (n, bad) =>
+      '<td class="' + (n === 0 ? "zero" : (bad ? "bad" : "")) + '">' + n + '</td>';
+    return "<tr><td>" + esc(name) + "</td>"
+         + cell(open, false) + cell(wait, true) + cell(done, false) + "</tr>";
+  }).join("");
+}
+
+function renderList(b, jobs) {
+  const f = FILTERS[filter];
+  const shown = jobs.filter(j => f.pick(j, b))
+                    .sort((x, y) => y.created_at - x.created_at);
+
+  document.getElementById("listLabel").textContent =
+    f.label + (shown.length ? " · " + shown.length : "");
+
+  const list = document.getElementById("list");
+  const empty = document.getElementById("empty");
+
+  if (!shown.length) {
+    list.innerHTML = "";
+    empty.hidden = false;
+    empty.innerHTML = jobs.length === 0
+      ? "No jobs yet.<br><br>Reply <code>@ravi</code> to a customer message, or type "
+        + "<code>@ticket &lt;work&gt;</code> in a staff member’s chat."
+      : "Nothing in <b>" + esc(f.label.toLowerCase()) + "</b> for this period.";
+    return;
+  }
+
+  empty.hidden = true;
+  list.innerHTML = shown.map(j => {
+    const waiting = isWaiting(j);
+    const stamp = j.done_at ?? j.accepted_at ?? j.assigned_at ?? j.created_at;
+
+    let flag = "";
+    if (j.status === "blocked") {
+      flag = '<div class="flag">Stuck: ' + esc(j.blocked_reason || "no reason given") + "</div>";
+    } else if (waiting) {
+      flag = '<div class="flag wait">No response for ' + ago(data.now - j.assigned_at) + "</div>";
+    }
+
+    return '<li class="s-' + esc(j.status) + (waiting ? " waiting" : "") + '">'
+      + '<div class="top"><span class="id">#' + j.id + "</span><span>"
+        + (j.priority === "urgent" ? '<span class="pill urgent">urgent</span>' : "")
+        + '<span class="pill ' + esc(j.status) + '">' + esc(j.status.replace("_", " ")) + "</span>"
+      + "</span></div>"
+      + '<p class="title">' + esc(j.title) + "</p>"
+      + '<div class="meta">'
+        + '<span class="who">' + esc(j.assignee_name || "unassigned") + "</span>"
+        + '<span class="sep">·</span>'
+        + "<span>" + (j.customer_name ? "from " + esc(j.customer_name) : "owner created") + "</span>"
+        + '<span class="sep">·</span><span class="age">' + ago(data.now - stamp) + "</span>"
+      + "</div>" + flag
+    + "</li>";
+  }).join("");
+}
+
+// ─── events ───────────────────────────────────────────────
+document.getElementById("ranges").addEventListener("click", e => {
+  const c = e.target.closest(".chip");
+  if (!c) return;
+  range = c.dataset.r;
+  document.getElementById("date").value = "";
+  render();
+});
+
+document.getElementById("date").addEventListener("change", e => {
+  if (e.target.value) { range = e.target.value; render(); }
+});
+
+document.body.addEventListener("click", e => {
+  const t = e.target.closest(".tile");
+  if (!t) return;
+  filter = t.dataset.f;
+  render();
+});
+
+// ─── polling ──────────────────────────────────────────────
+async function load() {
+  const tick = document.getElementById("tick");
+  try {
+    const res = await fetch("/api/jobs");
+    if (!res.ok) throw new Error(String(res.status));
+    data = await res.json();
+    tick.textContent = "updated " + new Date().toLocaleTimeString("en-IN",
+      { hour: "2-digit", minute: "2-digit" });
+    tick.classList.remove("stale");
+    render();
+  } catch {
+    tick.textContent = "offline — retrying";
+    tick.classList.add("stale");
+  }
+}
+
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Installed packages - never commit these
+node_modules/
+
+# WhatsApp login keys. These ARE access to the account.
+# Never commit, never share, never put in a screenshot.
+auth/
+
+# Database file (coming in Step 3)
+*.db
+*.sqlite
+
+# Build output
+dist/
+
+# Secrets
+.env
