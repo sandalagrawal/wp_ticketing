@@ -1,7 +1,12 @@
-# Parchi — database schema (Step 3)
+# Parchi — database schema
 
 Six tables. This file is the specification: implement it as written, and if something here
 looks wrong, say so rather than quietly changing it.
+
+> **The SQL below is copied from `createTables()` in `src/db.ts`.** If the two ever
+> disagree, the code is the truth and this file is the bug — fix it here rather than
+> changing the code to match. It has drifted once already: it documented a
+> `member.wa_id` column for days after that was split into `wa_jid` and `wa_lid`.
 
 Reviewed design notes and the diagram behind this:
 https://claude.ai/artifact/G9ho1qknSMtVXghzAK4Lrw
@@ -58,72 +63,76 @@ insert time, and by then both exist.
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
 
--- ─── 1. member — staff and the owner ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS member (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   business_id     INTEGER NOT NULL DEFAULT 1,
-  name            TEXT    NOT NULL,              -- "Ravi Kumar"
-  handle          TEXT    NOT NULL,              -- "ravi" - what @ matches
-  phone           TEXT    NOT NULL,              -- "9876543210"
-  wa_id           TEXT,                          -- "919876543210@s.whatsapp.net"
+  name            TEXT    NOT NULL,
+  handle          TEXT    NOT NULL,
+  phone           TEXT    NOT NULL,
+  -- WhatsApp gives a person TWO identifiers and uses either one depending
+  -- on context. Store both; match an inbound sender against either.
+  wa_jid          TEXT,   -- 918109322881@s.whatsapp.net  (phone-based)
+  wa_lid          TEXT,   -- 213945457614937@lid          (opaque)
   role            TEXT    NOT NULL DEFAULT 'staff'
                     CHECK (role IN ('owner','manager','staff')),
   active          INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
+  -- Identity resolution bookkeeping. A number that is mistyped or has no
+  -- LID would otherwise be re-queried on every reconnect forever, which is
+  -- the contact-harvesting pattern that gets accounts flagged.
+  identity_attempts   INTEGER NOT NULL DEFAULT 0,
+  identity_checked_at INTEGER,
   created_at      INTEGER NOT NULL,
   deactivated_at  INTEGER,
   UNIQUE (business_id, handle),
   UNIQUE (business_id, phone)
 );
 
--- ─── 2. contact — WhatsApp identities we have seen ──────────────────────────
 CREATE TABLE IF NOT EXISTS contact (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   business_id   INTEGER NOT NULL DEFAULT 1,
-  wa_id         TEXT    NOT NULL,                -- the permanent identity key
-  display_name  TEXT,                            -- from msg.pushName, may be null
+  wa_id         TEXT    NOT NULL,
+  display_name  TEXT,
   phone         TEXT,
   first_seen_at INTEGER NOT NULL,
   UNIQUE (business_id, wa_id)
 );
 
--- ─── 3. conversation — a chat: one-to-one or group ──────────────────────────
 CREATE TABLE IF NOT EXISTS conversation (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   business_id INTEGER NOT NULL DEFAULT 1,
-  wa_chat_id  TEXT    NOT NULL,                  -- ...@s.whatsapp.net or ...@g.us
+  wa_chat_id  TEXT    NOT NULL,
   type        TEXT    NOT NULL CHECK (type IN ('dm','group')),
-  title       TEXT,                              -- group subject; null for dm
+  title       TEXT,
   created_at  INTEGER NOT NULL,
   UNIQUE (business_id, wa_chat_id)
 );
 
--- ─── 4. message — every message, one row each ───────────────────────────────
 CREATE TABLE IF NOT EXISTS message (
   id                   INTEGER PRIMARY KEY AUTOINCREMENT,
   business_id          INTEGER NOT NULL DEFAULT 1,
   conversation_id      INTEGER NOT NULL REFERENCES conversation(id),
   wa_message_id        TEXT    NOT NULL,
-  sender_wa_id         TEXT,                     -- null only if WhatsApp gives none
+  sender_wa_id         TEXT,
   direction            TEXT    NOT NULL CHECK (direction IN ('in','out')),
   type                 TEXT    NOT NULL DEFAULT 'text'
                          CHECK (type IN ('text','image','video','audio','document',
                                          'sticker','location','contact','other')),
-  body                 TEXT,                     -- text, or a media caption
-  quoted_wa_message_id TEXT,                     -- WhatsApp id of the replied-to message
+  body                 TEXT,
+  quoted_wa_message_id TEXT,
   job_id               INTEGER REFERENCES job(id),
-  sent_at              INTEGER NOT NULL,         -- from msg.messageTimestamp
+  sent_at              INTEGER NOT NULL,
   created_at           INTEGER NOT NULL,
   UNIQUE (conversation_id, wa_message_id)
 );
 
--- ─── 5. job — the ticket ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS job (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
   business_id       INTEGER NOT NULL DEFAULT 1,
   conversation_id   INTEGER NOT NULL REFERENCES conversation(id),
   contact_id        INTEGER REFERENCES contact(id),
   source_message_id INTEGER NOT NULL REFERENCES message(id),
-  title             TEXT    NOT NULL,            -- first ~60 chars of the source message
+  title             TEXT    NOT NULL,
+  description       TEXT,
   status            TEXT    NOT NULL DEFAULT 'new'
                       CHECK (status IN ('new','assigned','accepted',
                                         'in_progress','blocked','done','closed')),
@@ -136,10 +145,13 @@ CREATE TABLE IF NOT EXISTS job (
   assigned_at       INTEGER,
   accepted_at       INTEGER,
   done_at           INTEGER,
-  closed_at         INTEGER
+  closed_at         INTEGER,
+  -- Chasing. Each is set once so nobody gets reminded twice.
+  nudged_at         INTEGER,   -- staff member reminded
+  escalated_at      INTEGER,   -- owner told nobody has responded
+  notified_at       INTEGER    -- customer told the work is finished
 );
 
--- ─── 6. job_event — the history ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS job_event (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   business_id     INTEGER NOT NULL DEFAULT 1,
@@ -148,32 +160,24 @@ CREATE TABLE IF NOT EXISTS job_event (
                     CHECK (type IN ('created','assigned','reassigned','accepted',
                                     'status_changed','blocked','reopened',
                                     'customer_notified','note')),
-  actor_member_id INTEGER REFERENCES member(id),  -- set when staff/owner acted
-  actor_wa_id     TEXT,                           -- set when a customer caused it
+  actor_member_id INTEGER REFERENCES member(id),
+  actor_wa_id     TEXT,
   from_value      TEXT,
   to_value        TEXT,
   note            TEXT,
   created_at      INTEGER NOT NULL
 );
 
--- ─── Indexes ────────────────────────────────────────────────────────────────
-
--- the burst rule: all messages in this chat inside a time window
 CREATE INDEX IF NOT EXISTS idx_msg_window  ON message(conversation_id, sent_at);
--- resolving quoted_wa_message_id back to a row
 CREATE INDEX IF NOT EXISTS idx_msg_wa_id   ON message(wa_message_id);
--- a job's messages
 CREATE INDEX IF NOT EXISTS idx_msg_job     ON message(job_id);
--- the dashboard: open jobs by person
 CREATE INDEX IF NOT EXISTS idx_job_open    ON job(business_id, status, assignee_id);
--- "does this customer already have an open job?" - runs on every inbound message
 CREATE INDEX IF NOT EXISTS idx_job_contact ON job(contact_id, status);
--- a job's timeline
 CREATE INDEX IF NOT EXISTS idx_event_job   ON job_event(job_id, created_at);
-
--- staff lookup by WhatsApp id. NULLs are distinct in SQLite unique indexes,
--- so several members may have wa_id = NULL until they first reply.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_member_wa ON member(business_id, wa_id);
+-- NULLs are distinct in SQLite unique indexes, so several members may sit
+-- unresolved (both columns NULL) without colliding.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_member_jid ON member(business_id, wa_jid);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_member_lid ON member(business_id, wa_lid);
 ```
 
 ---
@@ -182,8 +186,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_member_wa ON member(business_id, wa_id);
 
 | Table | Holds | Note |
 |---|---|---|
-| `member` | staff and the owner | `handle` is what `@ravi` matches — never match on `name`, which breaks on duplicates, typos and case. `wa_id` is how an inbound `done` reply is traced to a person; it fills in when they first reply to their welcome message |
-| `contact` | WhatsApp identities seen | **This includes the owner and staff**, because every sender gets upserted. Treat it as "any identity", not "customer". Filter by joining `member.wa_id` when you need customers only |
+| `member` | staff and the owner | `handle` is what `@ravi` matches — never match on `name`, which breaks on duplicates, typos and case. **`wa_jid` and `wa_lid` are both needed**: WhatsApp uses either depending on context, so an inbound `done` must be matched against both. Filled by `sock.onWhatsApp()` once the socket is open; `identity_attempts` and `identity_checked_at` cap the retries |
+| `contact` | WhatsApp identities seen | **This includes the owner and staff**, because every sender gets upserted. Treat it as "any identity", not "customer". Filter by joining `member.wa_jid` / `member.wa_lid` when you need customers only |
 | `conversation` | where a message was said | In a DM this is nearly the same as the contact. In a **group** it is completely different: the group is the place, the participant is the person. Groups are the reason this project uses a linked device at all, so this table stays |
 | `message` | every message, one row each | `type` + `body`, never a column per media kind — a message is one kind of thing, so per-kind columns would be null on every row. `job_id` is null for most messages, which is normal: most messages never become jobs |
 | `job` | the ticket | Holds no WhatsApp identifiers — only internal ids. That is the adapter boundary: swap the transport and this table does not change |
@@ -211,6 +215,17 @@ new ──> assigned ──> accepted ──> in_progress ──> done ──> c
 
 `done` and `closed` are deliberately separate. That gap is the difference between a task
 list and a ticketing system.
+
+**Crossing it is an explicit act.** When a job reaches `done`, the owner is messaged with
+the customer's name; he replies `send <id>` (optionally with his own wording) and only
+then does the customer hear anything, `notified_at` get set, and the job close. It is not
+automatic: owners routinely want to add something ("bill is ₹800"), and a message reaching
+a customer unseen is how people stop trusting the tool. See `src/notify.ts`.
+
+**Chasing lives on the job row too.** `nudged_at` is set when the assignee is reminded
+(30 min unacknowledged), `escalated_at` when the owner is told nobody has responded
+(2 hours). Each is written *before* the send, so a failed message can't queue a reminder
+that repeats on every sweep.
 
 **Reopening** sets `status` back to `assigned` and writes a `reopened` row in `job_event`.
 It is not a status of its own — it is an event, because it can happen more than once.
@@ -331,13 +346,21 @@ LIMIT 1;
 
 ### Which member sent this reply?
 
+Match against **both** identifiers — the same person arrives as either:
+
 ```sql
 SELECT id, name, handle, role FROM member
-WHERE business_id = 1 AND wa_id = ? AND active = 1;
+WHERE business_id = 1 AND active = 1
+  AND (wa_jid = ? OR wa_lid = ?);
 ```
 
 Inactive members must be rejected — an ex-employee replying `done` to an old job message
 gets a refusal, not a status change.
+
+**No match means do nothing.** Never infer the sender from circumstance ("the one member
+with an open job"): a LID carries no information to deduce from, customers arrive as LIDs
+too, and a guess gets written permanently into that member's row. This was a real bug —
+see `CLAUDE.md`.
 
 ---
 
@@ -360,9 +383,11 @@ WHERE sent_at < ?                       -- now - 7 days
 - **No `job_message` link table.** `message.job_id` covers it. The only thing lost is one
   message spawning two jobs ("fix the AC and bring the invoice"), which is rare — add the
   link table the day it actually matters. A column to a link table is an easy migration.
-- **No media storage.** `type` records that a photo arrived; the file is not saved. Step 5
-  forwards the original WhatsApp message to the staff member instead of downloading and
-  re-uploading. The dashboard cannot show the photo until this changes.
+- **No media storage.** `type` records that a photo arrived; the file is not saved, and the
+  job sent to the staff member is **text only** — he gets the caption, not the picture.
+  For a job that *is* a photo of a broken part, that's a real gap. The cheap fix when it
+  matters is forwarding the original WhatsApp message rather than downloading and
+  re-uploading it. The dashboard can't show media until this changes either.
 - **No `business` table.** `business_id` is a hardcoded `1` until there is a second
   business.
 - **No `estimated_time`**, no SLA fields, no analytics tables. Later.

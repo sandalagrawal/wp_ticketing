@@ -89,6 +89,43 @@ OTP login and multi-tenancy come after that, not before.
 | Owner | anywhere | `send 7` / `send 7 <message>` | Tells the customer, closes the job |
 | Staff | their own chat | `1` / `2` / `3` | accepted / done / stuck |
 
+### Known gaps
+
+Real, deliberate, or not yet hit. Don't "discover" these as bugs — and don't fix one
+without checking it's still the right time to.
+
+**Would bite in a real trial**
+
+- **A staff member with two open jobs can't say which one he means.** `1`/`2`/`3` resolve
+  to his most recently created open job (`findOpenJobForMember`). The job card says
+  "#7" but the reply doesn't carry a number. Fix: accept `2 7` / `done 7`, fall back to
+  the newest when omitted.
+- **Media never reaches the assignee.** The job card is text only. A customer's photo of a
+  broken part becomes a caption at best. See `docs/SCHEMA.md` → Deliberately not here.
+- **Staff are hardcoded** in `seedMembers()`. No add/remove without editing code and
+  restarting. The `add Ravi 9876543210` self-chat command in the spec isn't built.
+- **No reassignment.** The spec calls for one action; there isn't one.
+- **Staff can't list their own jobs.** No `jobs` command.
+- **Groups are untested.** The sender-extraction code handles them, but no job has ever
+  been created in one — and whether that matters is still the open question in
+  `docs/PRODUCT.md`.
+
+**Fine for Phase 0, must change before a second business**
+
+- **Dashboard has no auth.** Anyone on the same wifi can read every job.
+- **Single tenant.** `business_id` is hardcoded `1` in every query.
+- **Credentials sit in plain files.** `auth/` is unencrypted on disk; production needs
+  envelope encryption with a per-business key.
+- **No migrations.** Schema changes mean deleting the database.
+- **`unhandledRejection` is swallowed** and logged. A development convenience that hides
+  real failures — remove it before anything matters.
+- **No automated tests.** Everything so far has been verified by running it.
+
+**Known and accepted**
+
+- The whole linked-device approach is against WhatsApp's terms. `docs/PRODUCT.md` →
+  Platform risk explains why, and what has to stay true for it to remain survivable.
+
 ---
 
 ## Stack and commands
@@ -117,19 +154,34 @@ is connected.
 
 ---
 
+## Git
+
+Private repo: **https://github.com/sandalagrawal/wp_ticketing** (`origin`, branch `main`).
+
+`.gitignore` excludes `auth/` and the database. **The `auth/` folder is account access —
+it must never be committed**, and if it ever is, the credentials have to be treated as
+compromised: unlink the device from the phone and re-link.
+
 ## Keeping this file honest
 
 This file is the only thing a new session knows. If it drifts from the code, the next
-session starts from a wrong picture and confidently builds on it.
+session starts from a wrong picture and confidently builds on it. That has already
+happened once: this file claimed Step 3 was "next" while Steps 3–7 were finished, and a
+`USE_PAIRING_CODE` flag that no longer exists was documented for days after it was
+deleted.
 
 **After any change that alters what the project IS** — a step completed, a new module, a
-new thing a user can type, a decision reversed — update the relevant section here in the
-same sitting. Not the end of the week.
+new thing a user can type, a decision reversed, a constant removed — update the relevant
+section here in the same sitting. Not the end of the week.
 
-Good commit rhythm: finish a feature → update this file → `git commit` with both.
+Good rhythm: finish a feature → update this file → `git commit` with both → `git push`.
 
 If you are a session that just discovered this file is out of date, say so before building
 on it.
+
+**Recovering a lost session:** transcripts are saved per directory. `claude --continue`
+reopens the most recent one for this folder; `claude --resume` shows a picker. Kept 30
+days by default. But this file is the real memory — resume is only a convenience.
 
 ---
 
@@ -168,9 +220,19 @@ are not from a human. See `describe()` in `src/index.ts`.
 **Group vs 1:1 sender:** in a group the sender is `msg.key.participant`; in a 1:1 chat the
 sender is `msg.key.remoteJid` itself.
 
-**QR is more reliable than pairing codes** for development. There is a `USE_PAIRING_CODE`
-flag at the top of `src/index.ts` — pairing codes matter for real mobile-only owners, but
-they are flakier, so don't let them block local work.
+**Linking is chosen at runtime, in `src/linking.ts`.** There is no `USE_PAIRING_CODE`
+constant any more. On an unlinked start it asks QR or pairing code; environment variables
+override, which is how an unattended server links:
+
+```
+PARCHI_LINK=qr
+PARCHI_LINK=code  PARCHI_NUMBER=919876543210
+```
+
+With no TTY it falls back to QR rather than hanging on a prompt that nobody can answer.
+Pairing codes are reissued automatically every ~75s while unlinked, because they expire in
+about a minute. Both paths end at the same credentials in `auth/` — nothing downstream
+knows which was used.
 
 **WhatsApp sends LIDs, not phone numbers, and you cannot guess identity from them.**
 A LID (`248107426156741@lid`) is an opaque per-user id WhatsApp uses instead of a phone

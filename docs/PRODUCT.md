@@ -52,8 +52,29 @@ friction for the owner.
 But: **no group chat support at all**, activation requires Solution Partner or Tech
 Provider status with Meta (or going through a BSP like 360dialog or Gupshup), the Business
 App must be opened every 10–12 days or the link expires, not available in every country,
-and the number needs 7+ days of prior activity. Plus per-conversation fees and approved
+and the number needs 7+ days of prior activity. Plus per-message fees and approved
 message templates for anything outside the 24-hour customer service window.
+
+**Pricing moved against this use case in 2026.** Billing went per-conversation →
+per-message in 2025, and on **1 October 2026 the free 24-hour window ended**: replies
+inside it are now charged as "service" messages, with the first 1,000 per number per
+month free. Reported India rates are roughly ₹0.115 per utility/service message and
+₹0.86 marketing, before 18% GST — from BSP blogs, not Meta's rate card, so verify at
+developers.facebook.com/docs/whatsapp/pricing before relying on them.
+
+Run the numbers anyway, because cost is *not* the reason to avoid this route. A business
+doing 20 jobs a day sends roughly 1,800 messages a month; after the free 1,000 that's
+about ₹110 — call it 14% of a ₹799 subscription. Noticeable, not fatal. **The reasons are
+groups and onboarding friction**, not the bill. Which is also why the October change
+matters: Parchi's traffic is mostly reactive service replies, exactly the category that
+stopped being free.
+
+**BSPs (now "Solution Partners") use this same API** — WATI, Interakt, AiSensy, Gupshup
+have no privileged access. What they sell is onboarding via Embedded Signup, a UI, and
+consolidated billing, for ₹999–2,500/month plus any per-message markup. A **Tech Provider**
+builds and onboards but can't invoice, so Meta bills the business directly; that's the tier
+a solo developer would hold. Periskope is **not** a BSP — it's linked-device, like Parchi,
+which is precisely why it can do groups and they can't.
 
 **2. Browser automation** (whatsapp-web.js + Puppeteer). Drives a headless Chrome loading
 web.whatsapp.com. ~400–500 MB RAM per number. Unviable past a handful of businesses.
@@ -350,8 +371,15 @@ business per week (under ten and the pain probably isn't real).
 
 ## Effort
 
-- **Phase 0** — 35–50 h. Connect, `@mention` detection, send to staff, catch replies,
-  database, one plain page. One business, hardcoded.
+**Phase 0 is done** (Nov 2026), and it took more than the estimate — the plan was
+connect, assign, send, reply, store, one page. What actually shipped also includes
+owner-created jobs, the customer-update loop, nudges and escalation, pairing-code linking,
+LID identity resolution and message retention. Most of the overrun was WhatsApp's own
+edges rather than product scope: the 440 reconnect loop, the Baileys 7.0.0-rc trap, and
+LIDs replacing phone numbers as the identifier.
+
+- **Phase 0** — estimated 35–50 h. Connect, `@mention` detection, send to staff, catch
+  replies, database, one plain page. One business, hardcoded.
 - **Phase 1** — 150–200 h on top, plus ~25% for the unforeseeable. Multi-tenancy, OTP
   sign-in, staff management, the real dashboard, reply-to-customer, follow-up threading,
   media, session recovery, nudges and digest, roles, encryption at rest, deployment,
