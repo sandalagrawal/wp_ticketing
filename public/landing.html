@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#29497A">
+<title>Parchi — WhatsApp jobs that actually get finished</title>
+<meta name="description" content="Mention any of your staff on a customer message and they get the job on WhatsApp. You see everything that's open and who hasn't replied.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground:    #FFFFFF;
+    --tint:      #F1F4F8;
+    --surface:   #FFFFFF;
+    --ink:       #111923;
+    --ink-2:     #3C4857;
+    --muted:     #68758A;
+    --rule:      #DCE3EB;
+    --accent:    #29497A;
+    --accent-2:  #1C3457;
+    --accent-bg: #E6EDF7;
+    --stamp:     #A1361F;
+    --stamp-bg:  #FAE6E0;
+    --good:      #28624A;
+    --wa-out:    #D9FDD3;
+    --wa-in:     #FFFFFF;
+    --wa-bg:     #E9E2DB;
+
+    --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #0E1218;
+      --tint:      #141B24;
+      --surface:   #171E27;
+      --ink:       #EAEFF5;
+      --ink-2:     #C2CCD9;
+      --muted:     #93A1B2;
+      --rule:      #2C3542;
+      --accent:    #8FB1E0;
+      --accent-2:  #B6CEEE;
+      --accent-bg: #1B2838;
+      --stamp:     #EF9077;
+      --stamp-bg:  #33211A;
+      --good:      #7CCCA0;
+      --wa-out:    #144D37;
+      --wa-in:     #202C33;
+      --wa-bg:     #0C1317;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 64rem; margin: 0 auto; padding: 0 1.25rem; }
+  .narrow { max-width: 42rem; }
+
+  a { color: var(--accent); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.7rem;
+  }
+
+  h2 {
+    font-size: clamp(1.6rem, 4.2vw, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    line-height: 1.18;
+    margin: 0 0 0.9rem;
+    text-wrap: balance;
+  }
+
+  h3 { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.4rem; letter-spacing: -0.008em; }
+
+  p { margin: 0 0 1rem; }
+  .lead { font-size: 1.1rem; color: var(--ink-2); }
+
+  /* ── nav ──────────────────────────────────────────────── */
+
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .navin {
+    max-width: 64rem; margin: 0 auto; padding: 0.85rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .brand {
+    font-weight: 700; font-size: 1.28rem; letter-spacing: -0.03em;
+    color: var(--ink); text-decoration: none;
+  }
+  .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 3px; }
+  .navlinks { display: flex; align-items: center; gap: 1.4rem; }
+  .navlinks a { color: var(--muted); text-decoration: none; font-size: 0.92rem; font-weight: 500; }
+  .navlinks a:hover { color: var(--ink); }
+  @media (max-width: 42rem) { .navlinks a.hide-sm { display: none; } }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent); color: #fff;
+    font-family: var(--sans); font-size: 0.95rem; font-weight: 600;
+    border: 1px solid var(--accent); border-radius: 6px;
+    padding: 0.6rem 1.1rem; text-decoration: none; cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  :root:not([data-theme="light"]) .btn { color: var(--ground); }
+  .btn.sm { padding: 0.45rem 0.85rem; font-size: 0.88rem; }
+  .btn.big { padding: 0.8rem 1.6rem; font-size: 1.02rem; }
+  .btn.ghost { background: none; color: var(--accent); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ── hero ─────────────────────────────────────────────── */
+
+  .hero { padding: clamp(3rem, 9vw, 5.5rem) 0 clamp(2.5rem, 7vw, 4rem); }
+  .herogrid { display: grid; gap: 3rem; align-items: center; }
+  @media (min-width: 56rem) { .herogrid { grid-template-columns: 1.05fr 0.95fr; gap: 4rem; } }
+
+  h1 {
+    font-size: clamp(2.1rem, 6.2vw, 3.3rem);
+    font-weight: 700;
+    letter-spacing: -0.032em;
+    line-height: 1.08;
+    margin: 0 0 1.1rem;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+
+  .herosub { font-size: 1.14rem; color: var(--ink-2); margin-bottom: 1.8rem; max-width: 34ch; }
+
+  .cta { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+  .ctanote { font-size: 0.88rem; color: var(--muted); margin-top: 0.9rem; }
+
+  /* ── whatsapp mock ────────────────────────────────────── */
+
+  .phone {
+    background: var(--wa-bg);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1rem 0.85rem;
+    box-shadow: 0 1px 2px rgba(17,25,35,0.06), 0 12px 32px -12px rgba(17,25,35,0.22);
+  }
+  .phonehead {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0 0.2rem 0.75rem; margin-bottom: 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  }
+  .avatar {
+    width: 2rem; height: 2rem; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-size: 0.8rem; font-weight: 600;
+  }
+  .phonehead b { font-size: 0.92rem; font-weight: 600; }
+  .phonehead small { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+
+  .msgs { display: grid; gap: 0.4rem; }
+  .msg {
+    max-width: 85%;
+    padding: 0.5rem 0.7rem;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    line-height: 1.42;
+    position: relative;
+  }
+  .msg.in  { background: var(--wa-in);  justify-self: start; border-top-left-radius: 2px; }
+  .msg.out { background: var(--wa-out); justify-self: end;   border-top-right-radius: 2px; }
+  .msg .t { display: block; font-family: var(--mono); font-size: 0.6rem; color: var(--muted); margin-top: 0.25rem; text-align: right; }
+  .msg.cmd { font-family: var(--mono); font-weight: 600; color: var(--accent); }
+  .msg.bot { background: var(--accent-bg); justify-self: end; border-top-right-radius: 2px; font-size: 0.86rem; }
+  .msg.bot b { display: block; margin-bottom: 0.15rem; }
+
+  .caption {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.04em;
+    color: var(--muted); text-align: center; margin-top: 0.85rem;
+  }
+
+  /* ── sections ─────────────────────────────────────────── */
+
+  section { padding: clamp(3rem, 8vw, 4.75rem) 0; }
+  section.tinted { background: var(--tint); border-block: 1px solid var(--rule); }
+
+  .steps { display: grid; gap: 1.25rem; margin-top: 2rem; }
+  @media (min-width: 48rem) { .steps { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; } }
+
+  .step { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 1.4rem; }
+  .stepnum {
+    font-family: var(--mono); font-size: 0.7rem; font-weight: 600;
+    color: #fff; background: var(--accent);
+    width: 1.7rem; height: 1.7rem; border-radius: 50%;
+    display: grid; place-items: center; margin-bottom: 0.9rem;
+  }
+  :root:not([data-theme="light"]) .stepnum { color: var(--ground); }
+  .step p { margin: 0; color: var(--ink-2); font-size: 0.96rem; }
+  .step code {
+    font-family: var(--mono); font-size: 0.88em;
+    background: var(--accent-bg); color: var(--accent);
+    padding: 0.1em 0.35em; border-radius: 3px; font-weight: 600;
+  }
+
+  .points { display: grid; gap: 1.6rem; margin-top: 2rem; }
+  @media (min-width: 44rem) { .points { grid-template-columns: repeat(2, 1fr); gap: 2rem 2.5rem; } }
+  .point p { margin: 0; color: var(--ink-2); font-size: 0.97rem; }
+  .point h3::before {
+    content: ""; display: inline-block;
+    width: 0.5rem; height: 0.5rem; border-radius: 2px;
+    background: var(--accent); margin-right: 0.55rem; vertical-align: 0.1em;
+  }
+
+  /* ── compare ──────────────────────────────────────────── */
+
+  .scroll { overflow-x: auto; margin-top: 1.75rem; }
+  table { width: 100%; min-width: 34rem; border-collapse: collapse; font-size: 0.95rem; background: var(--surface); }
+  th, td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid var(--rule); }
+  thead th {
+    font-family: var(--mono); font-size: 0.6rem; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+  }
+  tbody th { font-weight: 500; color: var(--ink-2); }
+  td.yes { color: var(--good); font-weight: 600; }
+  td.no  { color: var(--muted); }
+  thead th.us { color: var(--accent); }
+  tr td.us { background: var(--accent-bg); font-weight: 600; }
+
+  /* ── price ────────────────────────────────────────────── */
+
+  .price {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 2rem; text-align: center; max-width: 26rem; margin: 2rem auto 0;
+  }
+  .price .amt { font-family: var(--mono); font-size: 2.6rem; font-weight: 600; letter-spacing: -0.02em; }
+  .price .per { color: var(--muted); font-size: 0.95rem; }
+  .price ul { list-style: none; padding: 0; margin: 1.4rem 0 0; text-align: left; display: grid; gap: 0.55rem; }
+  .price li { font-size: 0.95rem; color: var(--ink-2); padding-left: 1.5rem; position: relative; }
+  .price li::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 700; }
+
+  /* ── faq ──────────────────────────────────────────────── */
+
+  details {
+    border-bottom: 1px solid var(--rule);
+    padding: 1.05rem 0;
+  }
+  summary {
+    cursor: pointer; font-weight: 600; font-size: 1.02rem;
+    list-style: none; display: flex; justify-content: space-between; gap: 1rem;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--accent); font-weight: 400; font-size: 1.3rem; line-height: 1; }
+  details[open] summary::after { content: "−"; }
+  details p { margin: 0.75rem 0 0; color: var(--ink-2); font-size: 0.97rem; }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ── form ─────────────────────────────────────────────── */
+
+  form { margin-top: 2rem; display: grid; gap: 0.9rem; }
+  @media (min-width: 40rem) { .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; } }
+
+  label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--ink-2); margin-bottom: 0.3rem; }
+  label span { font-weight: 400; color: var(--muted); }
+
+  input, select, textarea {
+    width: 100%; font-family: var(--sans); font-size: 1rem;
+    color: var(--ink); background: var(--surface);
+    border: 1px solid var(--rule); border-radius: 6px;
+    padding: 0.65rem 0.8rem; min-height: 2.75rem;
+  }
+  textarea { min-height: 4.5rem; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+
+  .formnote { font-size: 0.85rem; color: var(--muted); }
+  .result { padding: 1rem 1.15rem; border-radius: 6px; font-size: 0.97rem; }
+  .result.ok  { background: var(--accent-bg); color: var(--accent); }
+  .result.bad { background: var(--stamp-bg); color: var(--stamp); }
+
+  footer { border-top: 1px solid var(--rule); padding: 2.5rem 0; color: var(--muted); font-size: 0.88rem; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="navin">
+    <a class="brand" href="#top">Parchi</a>
+    <div class="navlinks">
+      <a href="#how" class="hide-sm">How it works</a>
+      <a href="#pricing" class="hide-sm">Pricing</a>
+      <a href="#faq" class="hide-sm">FAQ</a>
+      <a href="#join" class="btn sm">Get early access</a>
+    </div>
+  </div>
+</nav>
+
+<div id="top" class="hero">
+  <div class="wrap herogrid">
+    <div>
+      <h1>Every job comes to your WhatsApp. <em>Now they actually get finished.</em></h1>
+      <p class="herosub">
+        Reply <strong>@ravi</strong>, <strong>@sunita</strong> — whoever should handle it.
+        They get the job on WhatsApp. You see what's open, what's done, and who hasn't replied.
+      </p>
+      <div class="cta">
+        <a href="#join" class="btn big">Get early access</a>
+        <a href="#how" class="btn big ghost">See how it works</a>
+      </div>
+      <p class="ctanote">Works with your existing number. Your staff install nothing.</p>
+    </div>
+
+    <figure style="margin:0">
+      <div class="phone">
+        <div class="phonehead">
+          <div class="avatar">S</div>
+          <div><b>Sanjay — Flat 402</b><small>customer</small></div>
+        </div>
+        <div class="msgs">
+          <div class="msg in">AC is not cooling since morning<span class="t">10:02</span></div>
+          <div class="msg in">Flat 402, Sunrise Apartments<span class="t">10:02</span></div>
+          <div class="msg in">Can someone come before 5?<span class="t">10:03</span></div>
+          <div class="msg out cmd">@ravi<span class="t">10:05 ✓✓</span></div>
+          <div class="msg bot">
+            <b>📋 Job #41 → Ravi Kumar</b>
+            AC not cooling · Flat 402 Sunrise · before 5pm
+            <span class="t">10:05</span>
+          </div>
+        </div>
+      </div>
+      <figcaption class="caption">
+        One reply. Next job might be <b>@sunita</b> or <b>@amit</b> — whoever it's for.
+      </figcaption>
+    </figure>
+  </div>
+</div>
+
+<section class="tinted" id="problem">
+  <div class="wrap narrow">
+    <p class="eyebrow">The problem</p>
+    <h2>You are the bottleneck, and you know it</h2>
+    <p class="lead">
+      Orders, complaints, site visits — everything lands on your phone. Nothing moves until
+      you personally tell someone. So you forward messages, you repeat yourself, and you
+      remember it all in your head.
+    </p>
+    <div class="points">
+      <div class="point">
+        <h3>Things get missed</h3>
+        <p>A message scrolls past during a busy hour and nobody ever sees it again.</p>
+      </div>
+      <div class="point">
+        <h3>Nobody knows who has what</h3>
+        <p>Including the person you gave it to. "I thought Amit was doing that one."</p>
+      </div>
+      <div class="point">
+        <h3>No record</h3>
+        <p>A customer asks what happened to their order and you scroll for five minutes.</p>
+      </div>
+      <div class="point">
+        <h3>It stops when you stop</h3>
+        <p>You're at a wedding, or asleep, or driving — and work simply waits.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="narrow">
+      <p class="eyebrow">How it works</p>
+      <h2>Three things, and two of them you already do</h2>
+      <p class="lead">You add your team once and each person gets a short name. After that it's one
+         reply. No new app for your staff, no new number for your customers.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="stepnum">1</div>
+        <h3>Mention whoever should do it</h3>
+        <p>In the same chat you're already reading, reply <code>@ravi</code>, <code>@sunita</code>,
+           <code>@amit</code> — each person on your team has their own name. Parchi turns the
+           customer's messages into a job and assigns it to them.</p>
+      </div>
+      <div class="step">
+        <div class="stepnum">2</div>
+        <h3>They get it on WhatsApp</h3>
+        <p>From your number, which they already have saved. They reply <code>1</code> to accept,
+           <code>2</code> when it's done, <code>3</code> if stuck. No app, no login, no training.</p>
+      </div>
+      <div class="step">
+        <div class="stepnum">3</div>
+        <h3>You see everything</h3>
+        <p>One screen: what's open, who's holding it, how long it's been sitting, and who hasn't
+           replied. Nudges go out automatically after 30 minutes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tinted">
+  <div class="wrap">
+    <div class="narrow">
+      <p class="eyebrow">What you get</p>
+      <h2>The things you can't do in a WhatsApp group</h2>
+    </div>
+    <div class="points">
+      <div class="point">
+        <h3>Nothing gets forgotten</h3>
+        <p>If nobody accepts a job in 30 minutes, we remind them. After two hours, we tell you.
+           You stop being the one who remembers.</p>
+      </div>
+      <div class="point">
+        <h3>The customer gets told</h3>
+        <p>When work is finished you get a one-line prompt. Reply <code>send 41</code> and the
+           customer hears back — in the same chat they started.</p>
+      </div>
+      <div class="point">
+        <h3>Jobs you create yourself</h3>
+        <p>Customer phoned instead? Open that staff member's chat and type
+           <code>@ticket collect parts from Sharma Traders</code>. Same thing.</p>
+      </div>
+      <div class="point">
+        <h3>A real record</h3>
+        <p>Who was told what, when they accepted, when it was finished. When someone says
+           "I never got that", you can look.</p>
+      </div>
+      <div class="point">
+        <h3>Works in groups too</h3>
+        <p>If your work arrives in a site group or a dealer group, that works the same way.
+           Most tools can't see group chats at all.</p>
+      </div>
+      <div class="point">
+        <h3>It knows your team</h3>
+        <p>Each person gets a short name you choose. Type <code>@team</code> any time to see
+           the list, and if you mistype one, Parchi tells you instead of silently losing the job.</p>
+      </div>
+      <div class="point">
+        <h3>Your number stays yours</h3>
+        <p>We never send bulk or marketing messages — that's what gets numbers blocked.
+           Parchi only replies to people who messaged you first.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="narrow">
+      <p class="eyebrow">Compared to</p>
+      <h2>Why not just a WhatsApp group?</h2>
+      <p class="lead">Because a group is a conversation, not a system. It can't tell you what's still open.</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>&nbsp;</th><th>WhatsApp group</th><th>Helpdesk software</th><th class="us">Parchi</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>Staff install an app</th><td class="yes">No</td><td class="no">Yes</td><td class="us">No</td></tr>
+          <tr><th>Shows what's still open</th><td class="no">No</td><td class="yes">Yes</td><td class="us">Yes</td></tr>
+          <tr><th>Chases people who don't reply</th><td class="no">No</td><td class="yes">Yes</td><td class="us">Yes</td></tr>
+          <tr><th>Works in group chats</th><td class="yes">Yes</td><td class="no">No</td><td class="us">Yes</td></tr>
+          <tr><th>Keep your existing number</th><td class="yes">Yes</td><td class="no">Usually not</td><td class="us">Yes</td></tr>
+          <tr><th>Cost for 6 people</th><td class="yes">Free</td><td class="no">₹6,000+/mo</td><td class="us">₹799/mo</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="tinted" id="pricing">
+  <div class="wrap narrow" style="text-align:center">
+    <p class="eyebrow">Pricing</p>
+    <h2>One price. However many people you have.</h2>
+    <p class="lead">Everyone else charges per person, which is why they cost ₹6,000 a month for a small team.
+       Your staff work in WhatsApp, so they don't need a seat.</p>
+
+    <div class="price">
+      <div class="amt">₹799</div>
+      <div class="per">per month, per business</div>
+      <ul>
+        <li>Unlimited staff members</li>
+        <li>Unlimited jobs</li>
+        <li>Your existing WhatsApp number</li>
+        <li>Dashboard on phone and desktop</li>
+        <li>Automatic reminders and escalation</li>
+      </ul>
+      <p style="margin:1.6rem 0 0"><a href="#join" class="btn big">Get early access</a></p>
+      <p style="margin:0.8rem 0 0; font-size:0.85rem; color:var(--muted)">
+        Early users get the first 3 months at ₹399.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap narrow">
+    <p class="eyebrow">Questions</p>
+    <h2>The things people ask first</h2>
+
+    <details open>
+      <summary>Do my staff need to install anything?</summary>
+      <p>No. That's the whole point. You add your team once — each person gets a short name like
+         <code>@ravi</code> or <code>@sunita</code> — and from then on they get jobs as normal WhatsApp messages from your number
+         — the one already saved in their phone — and reply with a single character. There's
+         nothing to download, no account, no password, and nothing to teach anyone.</p>
+    </details>
+
+    <details>
+      <summary>Do I need a new WhatsApp number?</summary>
+      <p>No. Parchi connects to the number you already use, the same way WhatsApp Web does on a
+         laptop. You scan a code once, or type an 8-digit code if you only have your phone.
+         Your chats, your groups and your contacts all stay exactly as they are.</p>
+    </details>
+
+    <details>
+      <summary>Can I still use WhatsApp normally?</summary>
+      <p>Yes. Nothing changes about how you use it. Parchi just watches for the moment you mention
+         one of your team. Everything else carries on as before — you'll see Parchi listed
+         under Linked Devices, and you can remove it any time.</p>
+    </details>
+
+    <details>
+      <summary>Is my number safe? I've heard of people getting blocked.</summary>
+      <p>You've heard right, and it's worth being straight about. Numbers get blocked for sending
+         bulk or marketing messages to people who didn't ask. <strong>Parchi never does that</strong>
+         — there is no broadcast feature, and we only reply to people who messaged you first,
+         plus your own staff. That's the lowest-risk way to use WhatsApp there is. We'll explain
+         exactly how the connection works before you set anything up.</p>
+    </details>
+
+    <details>
+      <summary>Can you read my customer conversations?</summary>
+      <p>We only keep messages that become jobs, plus a seven-day window so you can still assign
+         something from yesterday. Everything else is discarded, never stored. Your old chats are
+         never uploaded anywhere.</p>
+    </details>
+
+    <details>
+      <summary>What if my work comes in a group, not a direct chat?</summary>
+      <p>That works too — mention the person on the message in the group. Worth mentioning
+         because most tools built on WhatsApp's official business API can't see group chats at
+         all.</p>
+    </details>
+
+    <details>
+      <summary>When can I actually use it?</summary>
+      <p>It's working today and being used by a real business. We're adding a small number of
+         early users so we can set each one up properly rather than all at once. Leave your
+         details and we'll come to you.</p>
+    </details>
+  </div>
+</section>
+
+<section class="tinted" id="join">
+  <div class="wrap narrow">
+    <p class="eyebrow">Early access</p>
+    <h2>Tell us about your business</h2>
+    <p class="lead">Takes thirty seconds. We'll call or message you — no spam, and we'll never
+       message your customers.</p>
+
+    <form id="joinform" novalidate>
+      <div class="row2">
+        <div>
+          <label for="f-name">Your name</label>
+          <input id="f-name" name="name" autocomplete="name" placeholder="Ravi Sharma">
+        </div>
+        <div>
+          <label for="f-business">Business name <span>(optional)</span></label>
+          <input id="f-business" name="business" autocomplete="organization" placeholder="Sharma Cooling">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label for="f-phone">WhatsApp number</label>
+          <input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="98765 43210">
+        </div>
+        <div>
+          <label for="f-email">Email <span>(optional)</span></label>
+          <input id="f-email" name="email" type="email" autocomplete="email" placeholder="you@example.com">
+        </div>
+      </div>
+
+      <div>
+        <label for="f-team">How many people work with you?</label>
+        <select id="f-team" name="teamSize">
+          <option value="">Choose one</option>
+          <option>Just me</option>
+          <option>2–5</option>
+          <option>6–15</option>
+          <option>16–40</option>
+          <option>More than 40</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="f-note">What takes up most of your day? <span>(optional)</span></label>
+        <textarea id="f-note" name="note" placeholder="Customers message me all day and I forward everything to my technicians…"></textarea>
+      </div>
+
+      <p class="formnote">Give us a phone number or an email — whichever you prefer.</p>
+      <button type="submit" class="btn big" id="submitbtn">Request early access</button>
+      <div id="result" class="result" hidden></div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap narrow">
+    <p style="margin:0 0 0.4rem"><strong style="color:var(--ink)">Parchi</strong> — the slip you hand someone when you give them a job.</p>
+    <p style="margin:0">
+      Not affiliated with or endorsed by WhatsApp or Meta.
+      · <a href="/app">Dashboard</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+  const form = document.getElementById("joinform");
+  const result = document.getElementById("result");
+  const btn = document.getElementById("submitbtn");
+
+  function show(kind, text) {
+    result.hidden = false;
+    result.className = "result " + kind;
+    result.textContent = text;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form).entries());
+
+    if (!String(data.phone || "").trim() && !String(data.email || "").trim()) {
+      show("bad", "Please leave a phone number or an email so we can reach you.");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      form.querySelectorAll("input, select, textarea").forEach(el => el.value = "");
+      show("ok", "Got it — thank you. We'll be in touch shortly.");
+      btn.textContent = "Request early access";
+    } catch {
+      show("bad", "Something went wrong. Please try again, or message us directly.");
+      btn.textContent = "Request early access";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

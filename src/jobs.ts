@@ -2,6 +2,8 @@ import {
   findMemberByHandle,
   findMemberByWaId,
   findMemberBySenderWaId,
+  findMembersLike,
+  listActiveMembers,
   findMessageByWaId,
   findLatestInboundMessage,
   getMessagesInWindow,
@@ -89,6 +91,55 @@ export interface AssignmentResult {
  * The CHAT identifies the assignee, so there is no @handle to type. That also
  * makes it unambiguous: an ordinary message to Ravi stays an ordinary message.
  */
+/** "@ravi · @sunita · @amit" — the team, as the owner would type them. */
+function handleList(): string {
+  const members = listActiveMembers();
+  if (!members.length) return "No staff added yet.";
+  return members.map(m => `*@${m.handle}* — ${m.name}`).join("\n");
+}
+
+/**
+ * The owner typed `@someone` and nobody matched. Tell him.
+ *
+ * Without this the message is logged to a console he cannot see and silently
+ * dropped — he believes the job was assigned and nothing happened at all.
+ * Returns the reply to send, or null if there is nothing to say.
+ */
+export function unknownHandleHelp(body: string | null, fromMe: boolean): string | null {
+  if (!fromMe || !body) return null;
+
+  // Reserved words that aren't meant to be people.
+  const RESERVED = new Set(["ticket", "job", "team"]);
+
+  const handle = parseAtMention(body);
+  if (!handle || RESERVED.has(handle)) return null;
+  if (findMemberByHandle(handle)) return null;   // it matched; nothing to explain
+
+  const near = findMembersLike(handle);
+
+  if (near.length === 1) {
+    return `⚠️ No one is *@${handle}*. Did you mean *@${near[0].handle}* (${near[0].name})?\n\n` +
+           `Reply to the customer's message again with the right name.`;
+  }
+
+  if (near.length > 1) {
+    return `⚠️ No one is *@${handle}*. Closest matches:\n` +
+           near.map(m => `*@${m.handle}* — ${m.name}`).join("\n");
+  }
+
+  return `⚠️ No one is *@${handle}*. Your team:\n\n${handleList()}\n\n` +
+         `Reply to the customer's message with one of these.`;
+}
+
+/** "@team" — remind the owner who he can assign to. */
+export function teamListReply(body: string | null, fromMe: boolean): string | null {
+  if (!fromMe || !body) return null;
+  if (!/^\s*@team\b/i.test(body)) return null;
+  return `👥 *Your team*\n\n${handleList()}\n\n` +
+         `Reply *@name* to a customer's message to assign it, or type ` +
+         `*@ticket <work>* in someone's own chat.`;
+}
+
 export function tryManualTicket(
   saved: SavedMessage,
   fromMe: boolean,

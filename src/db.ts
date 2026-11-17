@@ -153,6 +153,19 @@ function createTables() {
       created_at      INTEGER NOT NULL
     );
 
+    -- Landing-page signups. Not part of the product; kept here so there is one
+    -- database to back up and one process to run while testing demand.
+    CREATE TABLE IF NOT EXISTS waitlist (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      name        TEXT,
+      business    TEXT,
+      phone       TEXT,
+      email       TEXT,
+      team_size   TEXT,
+      note        TEXT,
+      created_at  INTEGER NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_msg_window  ON message(conversation_id, sent_at);
     CREATE INDEX IF NOT EXISTS idx_msg_wa_id   ON message(wa_message_id);
     CREATE INDEX IF NOT EXISTS idx_msg_job     ON message(job_id);
@@ -368,6 +381,34 @@ export function setMemberIds(
         wa_lid = coalesce(?, wa_lid)
     WHERE id = ?
   `).run(ids.waJid ?? null, ids.waLid ?? null, memberId);
+}
+
+/** Everyone active, for listing handles back to the owner. */
+export function listActiveMembers(): Member[] {
+  const d = getDb();
+  return d.prepare(`
+    SELECT ${MEMBER_COLS} FROM member
+    WHERE business_id = 1 AND active = 1
+    ORDER BY CASE role WHEN 'owner' THEN 1 ELSE 0 END, handle
+  `).all() as unknown as Member[];
+}
+
+/**
+ * Handles that look like what was typed — for "did you mean?" after an
+ * unrecognised @mention. Prefix matches first, then anything containing it.
+ */
+export function findMembersLike(handle: string): Member[] {
+  const needle = handle.toLowerCase();
+  const all = listActiveMembers();
+
+  const prefix = all.filter(m => m.handle.startsWith(needle));
+  if (prefix.length) return prefix;
+
+  return all.filter(m =>
+    m.handle.includes(needle) ||
+    needle.includes(m.handle) ||
+    m.name.toLowerCase().split(/\s+/).some(part => part.startsWith(needle)),
+  );
 }
 
 export function getAllActiveStaff(): Member[] {
@@ -638,6 +679,40 @@ export function getJobsForDashboard(): DashboardJob[] {
       CASE WHEN j.status IN ('done','closed') THEN 1 ELSE 0 END,
       j.created_at DESC
   `).all() as unknown as DashboardJob[];
+}
+
+// ─── Waitlist ────────────────────────────────────────────────
+
+export interface WaitlistEntry {
+  name?: string | null;
+  business?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  teamSize?: string | null;
+  note?: string | null;
+}
+
+export function addToWaitlist(entry: WaitlistEntry): number {
+  const d = getDb();
+  const row = d.prepare(`
+    INSERT INTO waitlist (name, business, phone, email, team_size, note, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    RETURNING id
+  `).get(
+    entry.name ?? null,
+    entry.business ?? null,
+    entry.phone ?? null,
+    entry.email ?? null,
+    entry.teamSize ?? null,
+    entry.note ?? null,
+    Date.now(),
+  ) as { id: number };
+  return row.id;
+}
+
+export function countWaitlist(): number {
+  const d = getDb();
+  return Number((getDb().prepare(`SELECT count(*) AS n FROM waitlist`).get() as { n: number }).n);
 }
 
 // ─── Retention ───────────────────────────────────────────────

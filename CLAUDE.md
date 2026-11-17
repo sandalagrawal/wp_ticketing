@@ -84,10 +84,17 @@ OTP login and multi-tenancy come after that, not before.
 
 | Who | Where | What | Effect |
 |---|---|---|---|
-| Owner | customer's chat | `@ravi` | Job from that customer's message burst |
+| Owner | customer's chat | `@<handle>` — `@ravi`, `@sunita`, … | Job from that customer's message burst, assigned to that person |
 | Owner | staff member's chat | `@ticket <work>` | Job from the text, assigned to that person |
+| Owner | anywhere | `@team` | Lists every handle and name |
 | Owner | anywhere | `send 7` / `send 7 <message>` | Tells the customer, closes the job |
 | Staff | their own chat | `1` / `2` / `3` | accepted / done / stuck |
+
+`ticket`, `job` and `team` are reserved — they can't be used as a member handle.
+
+**An unrecognised `@name` replies to the owner** with a "did you mean?" or the full team
+list. It used to be logged to a console he can't see and dropped silently, so he believed
+a job existed that never did. Any new command that can fail must tell him in WhatsApp.
 
 ### Known gaps
 

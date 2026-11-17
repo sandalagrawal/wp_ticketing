@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { networkInterfaces } from "node:os";
 import path from "node:path";
-import { getJobsForDashboard } from "./db.js";
+import { getJobsForDashboard, addToWaitlist, countWaitlist } from "./db.js";
 
 /**
  * A job that has been sent to someone but not acknowledged for this long is
@@ -10,6 +10,22 @@ import { getJobsForDashboard } from "./db.js";
  * able to see at a glance who hasn't responded.
  */
 export const WAITING_AFTER_MS = 30 * 60 * 1000;   // 30 minutes
+
+/** Read a request body, refusing anything oversized rather than buffering it. */
+function readBody(req: import("node:http").IncomingMessage, limit: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => {
+      data += chunk;
+      if (data.length > limit) {
+        reject(new Error("body too large"));
+        req.destroy();
+      }
+    });
+    req.on("end", () => resolve(data));
+    req.on("error", reject);
+  });
+}
 
 /** Local network addresses, so the dashboard can be opened on a phone. */
 function lanAddresses(): string[] {
@@ -47,11 +63,62 @@ export function startDashboard(port: number): void {
         return;
       }
 
-      if (url.pathname === "/" || url.pathname === "/index.html") {
-        const html = await readFile(
-          path.join(process.cwd(), "public", "index.html"),
-          "utf8",
-        );
+      // Early-access signups from the landing page.
+      if (url.pathname === "/api/waitlist" && req.method === "POST") {
+        const body = await readBody(req, 8 * 1024);
+        let data: Record<string, unknown>;
+        try {
+          data = JSON.parse(body);
+        } catch {
+          res.writeHead(400, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "bad json" }));
+          return;
+        }
+
+        const str = (v: unknown) => {
+          const s = typeof v === "string" ? v.trim() : "";
+          return s ? s.slice(0, 500) : null;
+        };
+        const phone = str(data.phone);
+        const email = str(data.email);
+
+        // One way to reach them is the whole point of the form.
+        if (!phone && !email) {
+          res.writeHead(400, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "need a phone or an email" }));
+          return;
+        }
+
+        const id = addToWaitlist({
+          name: str(data.name),
+          business: str(data.business),
+          phone,
+          email,
+          teamSize: str(data.teamSize),
+          note: str(data.note),
+        });
+
+        // Printed because a signup is the most interesting thing that can
+        // happen while this is running.
+        console.log(`\n  ★ EARLY ACCESS #${id} — ${str(data.name) ?? "someone"}` +
+                    `${str(data.business) ? " of " + str(data.business) : ""}` +
+                    ` · ${phone ?? email}` +
+                    `${str(data.teamSize) ? " · " + str(data.teamSize) + " people" : ""}` +
+                    `  (${countWaitlist()} total)\n`);
+
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+        return;
+      }
+
+      // "/" is the landing page; the owner's dashboard moved to "/app".
+      const page =
+        url.pathname === "/" || url.pathname === "/index.html" ? "landing.html"
+        : url.pathname === "/app" || url.pathname === "/app/" ? "index.html"
+        : null;
+
+      if (page) {
+        const html = await readFile(path.join(process.cwd(), "public", page), "utf8");
         res.writeHead(200, {
           "content-type": "text/html; charset=utf-8",
           "cache-control": "no-store",
@@ -72,9 +139,10 @@ export function startDashboard(port: number): void {
   // 0.0.0.0 so it's reachable from your phone on the same wifi, not just
   // from this machine.
   server.listen(port, "0.0.0.0", () => {
-    console.log(`Dashboard:  http://localhost:${port}`);
+    console.log(`Landing:    http://localhost:${port}`);
+    console.log(`Dashboard:  http://localhost:${port}/app`);
     for (const ip of lanAddresses()) {
-      console.log(`            http://${ip}:${port}   (from your phone, same wifi)`);
+      console.log(`            http://${ip}:${port}/app   (from your phone, same wifi)`);
     }
     console.log("");
   });

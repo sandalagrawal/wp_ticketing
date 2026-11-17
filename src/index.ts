@@ -17,7 +17,13 @@ import {
   purgeOldMessages,
   type MessageType,
 } from "./db.js";
-import { tryAssignment, tryManualTicket, tryStatusUpdate } from "./jobs.js";
+import {
+  tryAssignment,
+  tryManualTicket,
+  tryStatusUpdate,
+  unknownHandleHelp,
+  teamListReply,
+} from "./jobs.js";
 import { startDashboard } from "./dashboard.js";
 import { chooseLinkMethod, showQr, showPairingCode, type LinkChoice } from "./linking.js";
 import {
@@ -372,10 +378,17 @@ async function handleMessage(msg: WAMessage, sock: ReturnType<typeof makeWASocke
     }
   }
 
+  // ─── "@team" — who can I assign to? ─────────────────────
+  const teamReply = teamListReply(body, msg.key.fromMe ?? false);
+  if (teamReply) {
+    await sock.sendMessage(chatId, { text: teamReply }).catch(() => {});
+    return;
+  }
+
   // ─── Check for a job ────────────────────────────────────
   // Two ways one gets created, told apart by which chat we're in:
-  //   customer's chat  →  "@ravi"            → job from their messages
-  //   staff member's chat → "@ticket <work>" → job from the text
+  //   customer's chat   → "@ravi" / "@sunita"  → job from their messages
+  //   staff member's chat → "@ticket <work>"   → job from the text
   const assignment =
     tryManualTicket(saved, msg.key.fromMe ?? false, body, chatId, isGroup)
     ?? tryAssignment(saved, msg.key.fromMe ?? false, body, quoted);
@@ -405,6 +418,16 @@ async function handleMessage(msg: WAMessage, sock: ReturnType<typeof makeWASocke
     }).catch((err: any) => {
       console.log(`  ⚠ failed to send to ${assignment.memberName}:`, err?.message);
     });
+    return;
+  }
+
+  // ─── Owner mentioned someone who doesn't exist ──────────
+  // Silently dropping this is worse than any error: he thinks the job is
+  // assigned and it never existed.
+  const help = unknownHandleHelp(body, msg.key.fromMe ?? false);
+  if (help) {
+    console.log(`  ⚠ unknown @handle — told the owner`);
+    await sock.sendMessage(chatId, { text: help }).catch(() => {});
     return;
   }
 
